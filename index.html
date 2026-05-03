@@ -29,38 +29,91 @@
         #chat-window { transition: all 0.3s ease-in-out; transform-origin: bottom right; }
         .chat-hidden { transform: scale(0); opacity: 0; pointer-events: none; }
         .chat-visible { transform: scale(1); opacity: 1; pointer-events: auto; }
+        @keyframes slideDown { 0% { transform: translate(-50%, -100%); opacity: 0; } 10% { transform: translate(-50%, 20px); opacity: 1; } 90% { transform: translate(-50%, 20px); opacity: 1; } 100% { transform: translate(-50%, -100%); opacity: 0; } }
+        .toast-anim { animation: slideDown 3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     </style>
 </head>
 <body class="h-screen overflow-hidden flex flex-col">
 
-    <div id="login-modal" class="fixed inset-0 z-50 flex flex-col items-center justify-center login-bg px-4">
-        <div class="relative w-32 h-32 md:w-40 md:h-40 mb-[-20px] md:mb-[-30px] z-10 animate-float cursor-pointer group" onclick="changeMascotText()">
-            <div id="mascot-speech" class="absolute -top-24 left-1/2 transform -translate-x-1/2 w-48 bg-white text-teal-900 text-sm font-bold p-3 rounded-2xl shadow-xl border-2 border-teal-400 speech-bubble-enter text-center z-20">
-                <span id="mascot-text">嗨！我是碳吉 🌱<br><span class="text-xs text-gray-500 font-normal">您的 ESG 智慧小幫手</span></span>
-                <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-b-2 border-r-2 border-teal-400 rotate-45"></div>
+    <div id="toast-container" class="fixed top-0 left-1/2 z-[100] hidden">
+        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-3 rounded shadow-lg flex items-center font-bold text-sm">
+            <i class="fa-solid fa-lock mr-3"></i>
+            <span id="toast-msg" data-i18n="toast_lock">此為企業版進階模組，請聯繫系統管理員解鎖。</span>
+        </div>
+    </div>
+
+    <div id="ai-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg relative guide-bubble-anim">
+            <button onclick="closeAIModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times text-lg"></i></button>
+            <div class="flex items-center mb-4">
+                <div class="w-10 h-10 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mr-3"><i class="fa-solid fa-robot text-xl"></i></div>
+                <h3 class="text-xl font-bold text-gray-800" data-i18n="ai_title">AI 智慧減碳診斷</h3>
             </div>
-            <img src="./assets/tanjibaby.png" alt="碳吉吉祥物" class="w-full h-full object-contain mascot-shadow transition-transform duration-300 group-hover:scale-110 rounded-full" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tanji2026/ccus/main/tanjibaby.png'">
+            <div id="ai-content" class="bg-gray-50 p-4 rounded-xl text-sm text-gray-700 min-h-[150px] font-mono whitespace-pre-wrap border border-gray-200"></div>
+        </div>
+    </div>
+
+    <div id="login-modal" class="fixed inset-0 z-50 flex flex-col md:flex-row bg-white">
+        <div class="hidden md:flex flex-col justify-center items-center w-1/2 login-bg p-8 relative overflow-hidden">
+            <div class="absolute top-8 left-8 text-white/20">
+                <i class="fa-solid fa-leaf text-8xl transform -rotate-12"></i>
+            </div>
+            
+            <div class="relative w-48 h-48 animate-float cursor-pointer group" onclick="changeMascotText()">
+                <div id="mascot-speech" class="absolute -top-24 left-1/2 transform -translate-x-1/2 w-48 bg-white text-teal-900 text-sm font-bold p-3 rounded-2xl shadow-xl border-2 border-teal-400 speech-bubble-enter text-center z-20">
+                    <span id="mascot-text">嗨！我是碳吉 🌱<br><span class="text-xs text-gray-500 font-normal">您的 ESG 智慧小幫手</span></span>
+                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-b-2 border-r-2 border-teal-400 rotate-45"></div>
+                </div>
+                <img src="./assets/tanjibaby.png" alt="Mascot" class="w-full h-full object-contain mascot-shadow transition-transform duration-300 group-hover:scale-110 rounded-full" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tanji2026/ccus/main/tanjibaby.png'">
+            </div>
+            
+            <h1 class="text-white text-3xl font-bold mt-10 tracking-widest" data-i18n="login_title_left">企業綠色融資</h1>
         </div>
 
-        <div class="bg-white rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-[480px] text-center pt-10 md:pt-12 relative z-0">
-            <div class="absolute top-4 right-4 text-teal-100/50"><i class="fa-solid fa-leaf text-4xl md:text-6xl transform rotate-12"></i></div>
-            <h2 class="text-xl md:text-2xl font-bold text-gray-800 relative z-10">企業綠色融資暨智慧碳管理平台</h2>
-            <p class="text-xs md:text-sm text-gray-500 mt-2 mb-6 relative z-10 font-mono">Enterprise-grade Simulation System (PoC)</p>
-            <form onsubmit="handleLogin(event)" class="space-y-4 relative z-10">
-                <input type="text" id="user-id-input" placeholder="請輸入您的企業編號或職稱 (選填)" class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all">
-                <button type="submit" id="login-btn" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2.5 rounded-lg transition shadow-lg flex justify-center items-center group">
-                    <span id="login-btn-text">進入系統</span>
-                    <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                    <div id="login-spinner" class="loader ml-2 hidden" style="border-color: #fff; border-top-color: transparent;"></div>
+        <div class="flex flex-col justify-center items-center w-full md:w-1/2 p-6 md:p-12 relative bg-gray-50 md:bg-white h-full">
+            <div class="absolute top-4 right-4 z-50">
+                <button onclick="toggleLang()" class="lang-btn px-4 py-1.5 bg-white hover:bg-gray-100 text-teal-700 text-xs font-bold rounded-full transition border border-teal-200 shadow-sm flex items-center gap-1">
+                    <i class="fa-solid fa-globe"></i> <span class="lang-text">EN</span>
                 </button>
-            </form>
-            <div id="connection-error-msg" class="hidden mt-4 text-xs text-red-500 bg-red-50 p-2 rounded border border-red-200 text-left relative z-10"></div>
-        </div>
-        
-        <div class="mt-6 md:mt-8 text-center space-y-2">
-            <div class="text-teal-200/60 text-xs font-mono">Powered by AWS Lambda & DynamoDB</div>
-            <div class="text-teal-200/40 text-[10px] bg-black/20 px-3 py-1 rounded-full mx-auto max-w-xs md:max-w-none">
-                <i class="fa-solid fa-copyright mr-1"></i> 作品受著作權法保護，未經授權請勿複製轉載｜歡迎聯絡我們：tanji2026@gmail.com
+            </div>
+
+            <div class="md:hidden flex justify-center mb-6">
+                <div class="w-24 h-24 rounded-full bg-teal-50 p-2 shadow-inner">
+                    <img src="./assets/tanjibaby.png" alt="Mascot" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tanji2026/ccus/main/tanjibaby.png'">
+                </div>
+            </div>
+
+            <div class="w-full max-w-sm bg-white p-8 rounded-2xl shadow-xl md:shadow-none md:p-0 md:bg-transparent">
+                <div class="md:hidden mb-6 text-center">
+                    <h2 class="text-xl font-bold text-gray-800" data-i18n="login_title_mobile">綠色融資暨碳管理平台</h2>
+                </div>
+                <div class="hidden md:block mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 border-l-4 border-teal-600 pl-3" data-i18n="login_welcome">歡迎登入系統</h2>
+                    <p class="text-sm text-gray-500 mt-2 pl-4" data-i18n="login_desc">請輸入您的企業編號以繼續操作。</p>
+                </div>
+                
+                <form onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1" data-i18n="login_label">員工 / 企業編號</label>
+                        <input type="text" id="user-id-input" placeholder="請輸入編號 (測試可留白)" class="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all bg-gray-50 focus:bg-white">
+                        <p class="text-[10px] text-gray-400 mt-1"><i class="fa-solid fa-circle-info mr-1"></i> <span data-i18n="login_hint">提示：輸入 admin 可解鎖進階模組。</span></p>
+                    </div>
+                    
+                    <button type="submit" id="login-btn" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 rounded-lg transition shadow-lg flex justify-center items-center group">
+                        <span id="login-btn-text" data-i18n="login_btn">登入系統</span>
+                        <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        <div id="login-spinner" class="loader ml-2 hidden" style="border-color: #fff; border-top-color: transparent;"></div>
+                    </button>
+                </form>
+
+                <div id="connection-error-msg" class="hidden mt-4 text-xs text-red-500 bg-red-50 p-3 rounded-lg border border-red-200 text-left"></div>
+            </div>
+            
+            <div class="absolute bottom-4 left-0 w-full text-center px-4">
+                <p class="text-[10px] md:text-xs text-gray-400 font-medium">
+                    <i class="fa-solid fa-copyright mr-1"></i> <span data-i18n="copyright">作品受著作權法保護，未經授權請勿複製轉載</span><br class="md:hidden"> 
+                    <span class="hidden md:inline"> | </span> <span data-i18n="contact">聯絡我們：tanji2026@gmail.com</span>
+                </p>
             </div>
         </div>
     </div>
@@ -69,28 +122,34 @@
         <aside class="w-full md:w-72 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20 flex-shrink-0">
             <div class="hidden md:flex h-16 items-center px-6 bg-slate-800 border-b border-slate-700">
                 <i class="fa-solid fa-cloud text-teal-400 text-lg mr-2"></i>
-                <span class="font-bold text-white text-sm tracking-wide">綠色融資暨碳管理平台</span>
+                <span class="font-bold text-white text-sm tracking-wide" data-i18n="nav_title">綠色融資暨碳管理平台</span>
             </div>
             <nav class="flex-none md:flex-1 flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto w-full py-0 md:py-6">
-                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="sidebar-item sidebar-active flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-green-400 transition-all">
-                    <i class="fa-solid fa-chart-pie md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap">總覽儀表板</span>
+                <a href="#" onclick="trySwitchTab('dashboard')" id="nav-dashboard" class="sidebar-item sidebar-active flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-green-400 transition-all">
+                    <i class="fa-solid fa-chart-pie md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap" data-i18n="tab_dash">總覽儀表板</span>
                 </a>
-                <a href="#" onclick="switchTab('carbon-calc')" id="nav-carbon-calc" class="sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent transition-all">
-                    <i class="fa-solid fa-calculator md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap">碳排試算引擎</span>
+                <a href="#" onclick="trySwitchTab('carbon-calc')" id="nav-carbon-calc" class="sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent transition-all">
+                    <i class="fa-solid fa-calculator md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap" data-i18n="tab_calc">碳排試算引擎</span>
                 </a>
-                <div class="hidden md:block px-6 py-2 mt-4 text-xs font-bold text-slate-500 uppercase tracking-wider">數據管理</div>
-                <a href="#" onclick="switchTab('inventory')" id="nav-inventory" class="sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent transition-all hover:bg-slate-800 hover:text-white">
-                    <i class="fa-solid fa-list-check md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap">盤查清冊管理</span>
+                <div class="hidden md:block px-6 py-2 mt-4 text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="nav_grp_data">數據管理</div>
+                <a href="#" onclick="trySwitchTab('inventory')" id="nav-inventory" class="sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent transition-all hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-list-check md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap" data-i18n="tab_inv">盤查清冊管理</span>
                 </a>
-                <a href="#" class="sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent opacity-60 cursor-not-allowed" title="企業版專屬功能">
-                    <i class="fa-solid fa-truck-fast md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap">供應鏈碳排數據</span>
+                <a href="#" onclick="trySwitchTab('supply')" id="nav-supply" class="adv-module sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent opacity-50 transition-all">
+                    <i class="fa-solid fa-truck-fast md:w-5 mr-2 md:mr-3 text-center"></i>
+                    <span class="font-medium text-sm whitespace-nowrap flex-1 text-left" data-i18n="tab_supply">供應鏈碳排數據</span>
+                    <i class="fa-solid fa-lock text-[10px] text-gray-500 ml-2 nav-lock-icon"></i>
                 </a>
-                <div class="hidden md:block px-6 py-2 mt-4 text-xs font-bold text-slate-500 uppercase tracking-wider">融資與合規</div>
-                <a href="#" class="sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent opacity-60 cursor-not-allowed" title="企業版專屬功能">
-                    <i class="fa-solid fa-bullseye md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap">減碳目標追蹤</span>
+                <div class="hidden md:block px-6 py-2 mt-4 text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="nav_grp_comp">融資與合規</div>
+                <a href="#" onclick="trySwitchTab('target')" id="nav-target" class="adv-module sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent opacity-50 transition-all">
+                    <i class="fa-solid fa-bullseye md:w-5 mr-2 md:mr-3 text-center"></i>
+                    <span class="font-medium text-sm whitespace-nowrap flex-1 text-left" data-i18n="tab_target">減碳目標追蹤</span>
+                    <i class="fa-solid fa-lock text-[10px] text-gray-500 ml-2 nav-lock-icon"></i>
                 </a>
-                <a href="#" class="sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent opacity-60 cursor-not-allowed" title="企業版專屬功能">
-                    <i class="fa-solid fa-file-contract md:w-5 mr-2 md:mr-3 text-center"></i><span class="font-medium text-sm whitespace-nowrap">稽核報告下載</span>
+                <a href="#" onclick="trySwitchTab('audit')" id="nav-audit" class="adv-module sidebar-item flex-shrink-0 flex items-center justify-center md:justify-start px-4 md:px-6 py-3 border-b-4 md:border-b-0 md:border-l-4 border-transparent opacity-50 transition-all">
+                    <i class="fa-solid fa-file-contract md:w-5 mr-2 md:mr-3 text-center"></i>
+                    <span class="font-medium text-sm whitespace-nowrap flex-1 text-left" data-i18n="tab_audit">自動化稽核報告</span>
+                    <i class="fa-solid fa-lock text-[10px] text-gray-500 ml-2 nav-lock-icon"></i>
                 </a>
             </nav>
             <div class="hidden md:flex p-4 bg-slate-800 border-t border-slate-700">
@@ -98,7 +157,7 @@
                     <div id="user-avatar" class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xs">U</div>
                     <div class="ml-3">
                         <p class="text-sm font-medium text-white" id="display-name">測試經辦</p>
-                        <p class="text-xs text-slate-400">綠色融資審查權限</p>
+                        <p class="text-[10px] text-teal-400 font-mono" id="display-role" data-i18n="role_normal">一般權限</p>
                     </div>
                 </div>
             </div>
@@ -107,120 +166,198 @@
         <main class="flex-1 flex flex-col min-w-0 bg-gray-50 relative">
             <header class="bg-white shadow-sm border-b border-gray-200 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-8 py-3 md:py-0 md:h-16 gap-3 md:gap-0 flex-shrink-0">
                 <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-                    <h1 class="text-lg md:text-xl font-bold text-gray-800" id="page-title">總覽儀表板</h1>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800" id="page-title" data-i18n="tab_dash">總覽儀表板</h1>
                     <div class="flex md:hidden items-center gap-2">
                         <span class="text-xs font-medium text-gray-600" id="mobile-display-name">測試經辦</span>
                         <div class="w-6 h-6 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-[10px]" id="mobile-avatar">U</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-between md:justify-end">
-                    <button onclick="exportPDF()" id="pdf-btn" class="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs md:text-sm font-bold rounded hover:bg-indigo-100 transition shadow-sm whitespace-nowrap">
-                        <i class="fa-solid fa-file-pdf"></i><span class="hidden sm:inline">下載視覺化報告</span><span class="sm:hidden">PDF</span>
+                    <button onclick="openAIModal()" class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-700 text-white text-xs md:text-sm font-bold rounded hover:shadow-lg transition shadow-sm whitespace-nowrap">
+                        <i class="fa-solid fa-robot"></i><span class="hidden sm:inline" data-i18n="btn_ai">AI 智能診斷</span><span class="sm:hidden">AI</span>
                     </button>
-                    <button onclick="exportCSV()" class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-600 text-xs md:text-sm font-medium rounded hover:bg-gray-50 transition shadow-sm whitespace-nowrap">
-                        <i class="fa-solid fa-file-csv text-green-600"></i><span class="hidden sm:inline">匯出數據 (CSV)</span><span class="sm:hidden">CSV</span>
+                    <button onclick="toggleLang()" class="lang-btn px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold rounded transition border border-gray-300">
+                        <span class="lang-text">EN</span>
                     </button>
                     <div class="h-6 w-px bg-gray-300 mx-1 flex-shrink-0"></div>
-                    <button onclick="loadHistoryData()" class="text-gray-400 hover:text-teal-600 transition p-2 flex-shrink-0" title="重新整理數據"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button onclick="exportPDF()" id="pdf-btn" class="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs md:text-sm font-bold rounded hover:bg-indigo-100 transition shadow-sm whitespace-nowrap">
+                        <i class="fa-solid fa-file-pdf"></i><span class="hidden sm:inline" data-i18n="btn_pdf">視覺化報告</span><span class="sm:hidden">PDF</span>
+                    </button>
+                    <button onclick="exportCSV()" class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-600 text-xs md:text-sm font-medium rounded hover:bg-gray-50 transition shadow-sm whitespace-nowrap">
+                        <i class="fa-solid fa-file-csv text-green-600"></i><span class="hidden sm:inline" data-i18n="btn_csv">匯出數據</span><span class="sm:hidden">CSV</span>
+                    </button>
+                    <button onclick="loadHistoryData()" class="text-gray-400 hover:text-teal-600 transition p-2 flex-shrink-0"><i class="fa-solid fa-rotate-right"></i></button>
                     <div id="aws-status-badge" class="text-[10px] md:text-xs text-gray-500 font-bold bg-gray-100 px-2 md:px-3 py-1 rounded-full border border-gray-200 flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
-                        <div class="w-2 h-2 rounded-full bg-gray-400"></div> AWS 狀態未定
+                        <div class="w-2 h-2 rounded-full bg-gray-400"></div> <span id="aws-status-text" data-i18n="status_unknown">狀態未定</span>
                     </div>
                 </div>
             </header>
 
             <div class="flex-1 overflow-y-auto p-4 md:p-8 pb-32" id="report-content"> 
-                <div id="view-dashboard" class="space-y-6">
+                <div id="view-dashboard" class="space-y-6 view-section">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                         <div class="glass-card rounded-xl p-5 md:p-6 border-l-4 border-green-500">
-                            <p class="text-xs font-bold text-gray-500 uppercase">全行綠色融資餘額</p>
-                            <p class="text-xl md:text-2xl font-bold text-gray-800 mt-2">NT$ 1,250 億</p>
+                            <p class="text-xs font-bold text-gray-500 uppercase" data-i18n="dash_card1">全行綠色融資餘額</p>
+                            <p class="text-xl md:text-2xl font-bold text-gray-800 mt-2">NT$ 1,250 <span data-i18n="unit_billion">億</span></p>
                         </div>
                         <div class="glass-card rounded-xl p-5 md:p-6 border-l-4 border-blue-500">
-                            <p class="text-xs font-bold text-gray-500 uppercase">歷史累計投融資碳排</p>
+                            <p class="text-xs font-bold text-gray-500 uppercase" data-i18n="dash_card2">歷史累計投融資碳排</p>
                             <p id="total-emissions-display" class="text-xl md:text-2xl font-bold text-gray-800 mt-2">- <span class="text-sm font-normal text-gray-400">tCO2e</span></p>
                         </div>
                         <div class="glass-card rounded-xl p-5 md:p-6 border-l-4 border-purple-500">
-                            <p class="text-xs font-bold text-gray-500 uppercase">PCAF 覆蓋率 (估算)</p>
+                            <p class="text-xs font-bold text-gray-500 uppercase" data-i18n="dash_card3">PCAF 覆蓋率 (估算)</p>
                             <p class="text-xl md:text-2xl font-bold text-gray-800 mt-2">92.5%</p>
                         </div>
                     </div>
                     <div class="glass-card rounded-xl p-4 md:p-6 bg-white">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-700">企業碳排放歷史趨勢 (即時連線資料庫)</h3>
+                            <h3 class="font-bold text-gray-700" data-i18n="chart_title">企業碳排放歷史趨勢 (即時連線資料庫)</h3>
                             <span class="text-[10px] md:text-xs text-gray-400">AWS DynamoDB</span>
                         </div>
                         <div class="h-64 w-full"><canvas id="mainChart"></canvas></div>
                     </div>
                 </div>
 
-                <div id="view-carbon-calc" class="hidden space-y-6">
+                <div id="view-carbon-calc" class="hidden space-y-6 view-section">
                     <div class="glass-card rounded-xl p-4 md:p-8 w-full max-w-4xl mx-auto">
                         <h3 class="font-bold text-base md:text-lg text-gray-800 mb-2 flex items-center">
-                            <i class="fa-brands fa-aws text-orange-500 text-xl md:text-2xl mr-2 md:mr-3"></i> ISO 14064-1 企業全方位碳排試算
+                            <i class="fa-brands fa-aws text-orange-500 text-xl md:text-2xl mr-2 md:mr-3"></i> <span data-i18n="calc_title">ISO 14064-1 企業全方位碳排試算</span>
                         </h3>
                         <div class="mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                            <label class="text-sm font-bold text-gray-700 whitespace-nowrap">行業別設定：</label>
+                            <label class="text-sm font-bold text-gray-700 whitespace-nowrap" data-i18n="calc_industry">行業別設定：</label>
                             <select id="industry-select" class="w-full sm:flex-1 p-2 border border-gray-300 rounded text-sm text-gray-700 focus:ring-2 focus:ring-teal-500 outline-none bg-white" disabled>
-                                <option value="C" selected>C 大類 - 製造業</option>
+                                <option value="C" selected data-i18n="calc_ind_mfg">C 大類 - 製造業</option>
                             </select>
                             <span class="text-xs text-orange-500 font-medium px-2 py-1 bg-orange-100 rounded whitespace-nowrap">
-                                <i class="fa-solid fa-lock mr-1"></i> 模擬鎖定
+                                <i class="fa-solid fa-lock mr-1"></i> <span data-i18n="calc_lock">模擬鎖定</span>
                             </span>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <div class="space-y-4">
-                                <h4 class="text-xs font-bold text-teal-700 uppercase tracking-wider border-b pb-2"><i class="fa-solid fa-fire mr-1"></i> 範疇一 (直接排放)</h4>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">重油/燃料油 (公升) <span class="text-orange-400">*鍋爐</span></label><input type="number" id="input-heavy-oil" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50" placeholder="0"></div>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">固定源天然氣 (立方公尺)</label><input type="number" id="input-gas" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500" placeholder="0"></div>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">柴油使用量 (公升) <span class="text-gray-400">*推高機/車隊</span></label><input type="number" id="input-diesel" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500" placeholder="0"></div>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">汽油使用量 (公升) <span class="text-gray-400">*公務車</span></label><input type="number" id="input-gasoline" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500" placeholder="0"></div>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">冷媒逸散 (公斤) <span class="text-orange-400">*R-410A等</span></label><input type="number" id="input-refrigerant" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50" placeholder="0"></div>
+                                <h4 class="text-xs font-bold text-teal-700 uppercase tracking-wider border-b pb-2"><i class="fa-solid fa-fire mr-1"></i> <span data-i18n="scope1">範疇一 (直接排放)</span></h4>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_oil">重油/燃料油 (公升)</span> <span class="text-orange-400">*鍋爐</span></label><input type="number" id="input-heavy-oil" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50" placeholder="0"></div>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_gas">固定源天然氣 (立方公尺)</span></label><input type="number" id="input-gas" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500" placeholder="0"></div>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_diesel">柴油使用量 (公升)</span> <span class="text-gray-400">*推高機/車隊</span></label><input type="number" id="input-diesel" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500" placeholder="0"></div>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_gasoline">汽油使用量 (公升)</span> <span class="text-gray-400">*公務車</span></label><input type="number" id="input-gasoline" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500" placeholder="0"></div>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_ref">冷媒逸散 (公斤)</span> <span class="text-orange-400">*R-410A等</span></label><input type="number" id="input-refrigerant" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50" placeholder="0"></div>
                             </div>
                             <div class="space-y-4">
-                                <h4 class="text-xs font-bold text-blue-700 uppercase tracking-wider border-b pb-2"><i class="fa-solid fa-bolt mr-1"></i> 範疇二 (能源間接)</h4>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">外購電力 (度/kWh)</label><input type="number" id="input-power" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-500" placeholder="0"></div>
+                                <h4 class="text-xs font-bold text-blue-700 uppercase tracking-wider border-b pb-2"><i class="fa-solid fa-bolt mr-1"></i> <span data-i18n="scope2">範疇二 (能源間接)</span></h4>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_power">外購電力 (度/kWh)</span></label><input type="number" id="input-power" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-500" placeholder="0"></div>
                             </div>
                             <div class="space-y-4">
-                                <h4 class="text-xs font-bold text-purple-700 uppercase tracking-wider border-b pb-2"><i class="fa-solid fa-truck-ramp-box mr-1"></i> 範疇三 (其他間接)</h4>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">事業廢棄物 (公噸)</label><input type="number" id="input-waste" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-purple-500 bg-gray-50" placeholder="0"></div>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">自來水 (度/m3)</label><input type="number" id="input-water" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-purple-500" placeholder="0"></div>
-                                <div><label class="block text-[10px] text-gray-500 mb-1">商務差旅 (公里)</label><input type="number" id="input-travel" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-purple-500" placeholder="0"></div>
+                                <h4 class="text-xs font-bold text-purple-700 uppercase tracking-wider border-b pb-2"><i class="fa-solid fa-truck-ramp-box mr-1"></i> <span data-i18n="scope3">範疇三 (其他間接)</span></h4>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_waste">事業廢棄物 (公噸)</span></label><input type="number" id="input-waste" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-purple-500 bg-gray-50" placeholder="0"></div>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_water">自來水 (度/m3)</span></label><input type="number" id="input-water" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-purple-500" placeholder="0"></div>
+                                <div><label class="block text-[10px] text-gray-500 mb-1"><span data-i18n="f_travel">商務差旅 (公里)</span></label><input type="number" id="input-travel" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-purple-500" placeholder="0"></div>
                             </div>
                         </div>
                         <div class="bg-slate-50 p-4 md:p-6 rounded-xl border flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6">
                             <div class="flex flex-col sm:flex-row gap-4 sm:gap-8 text-center items-center">
-                                <div><p class="text-[10px] text-gray-400 uppercase">本次計算排放量</p><p id="result-total" class="text-2xl md:text-3xl font-bold text-slate-800">0.000 <span class="text-sm font-normal">tCO2e</span></p></div>
+                                <div><p class="text-[10px] text-gray-400 uppercase" data-i18n="calc_res_label">本次計算排放量</p><p id="result-total" class="text-2xl md:text-3xl font-bold text-slate-800">0.000 <span class="text-sm font-normal">tCO2e</span></p></div>
                                 <div class="hidden sm:block border-l h-10 self-center"></div>
                                 <div class="w-full sm:w-auto border-t sm:border-t-0 sm:border-l border-gray-200 pt-3 sm:pt-0 sm:pl-8 text-center sm:text-left text-[10px] text-gray-500 flex sm:block justify-around sm:space-y-1">
                                     <p>S1: <span id="res-s1">0</span> t</p><p>S2: <span id="res-s2">0</span> t</p><p>S3: <span id="res-s3">0</span> t</p>
                                 </div>
                             </div>
-                            <button onclick="calcFullCarbon()" id="calc-btn" class="w-full md:w-auto bg-orange-500 hover:bg-orange-600 text-white px-6 md:px-10 py-3 rounded-lg font-bold shadow-lg transition transform active:scale-95 flex items-center justify-center">呼叫 AWS Lambda 運算</button>
+                            <button onclick="calcFullCarbon()" id="calc-btn" class="w-full md:w-auto bg-orange-500 hover:bg-orange-600 text-white px-6 md:px-10 py-3 rounded-lg font-bold shadow-lg transition transform active:scale-95 flex items-center justify-center"><span id="calc-btn-text" data-i18n="calc_submit">呼叫 AWS Lambda 運算</span></button>
                         </div>
                         <div id="aws-debug" class="hidden mt-4 p-3 bg-black rounded text-green-400 font-mono text-[10px] overflow-x-auto whitespace-pre-wrap"></div>
                     </div>
                 </div>
 
-                <div id="view-inventory" class="hidden space-y-6">
+                <div id="view-inventory" class="hidden space-y-6 view-section">
                     <div class="glass-card rounded-xl p-4 md:p-8">
-                        <h3 class="font-bold text-base md:text-lg text-gray-800 mb-4 md:mb-6 flex items-center"><i class="fa-solid fa-database text-teal-600 mr-2 md:mr-3"></i> 歷史盤查清冊管理 (AWS DynamoDB)</h3>
+                        <h3 class="font-bold text-base md:text-lg text-gray-800 mb-4 md:mb-6 flex items-center"><i class="fa-solid fa-database text-teal-600 mr-2 md:mr-3"></i> <span data-i18n="inv_title">歷史盤查清冊管理 (AWS DynamoDB)</span></h3>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">時間戳記</th>
-                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">經辦人員</th>
-                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">產業類別</th>
-                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">總碳排 (tCO2e)</th>
-                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">範疇 (S1/S2/S3)</th>
-                                        <th scope="col" class="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">操作</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="tbl_time">時間戳記</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="tbl_user">經辦人員</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="tbl_ind">產業類別</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="tbl_total">總碳排 (tCO2e)</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="tbl_scopes">範疇 (S1/S2/S3)</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="tbl_act">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="inventory-table-body" class="bg-white divide-y divide-gray-200"></tbody>
                             </table>
                         </div>
-                        <div id="inventory-loading" class="text-center py-10 hidden"><div class="loader mx-auto mb-2"></div><p class="text-sm text-gray-500">正在讀取資料庫...</p></div>
-                        <div id="inventory-empty" class="text-center py-10 hidden"><p class="text-sm text-gray-500">目前尚無盤查資料。</p></div>
+                        <div id="inventory-loading" class="text-center py-10 hidden"><div class="loader mx-auto mb-2"></div><p class="text-sm text-gray-500" data-i18n="inv_loading">正在讀取資料庫...</p></div>
+                        <div id="inventory-empty" class="text-center py-10 hidden"><p class="text-sm text-gray-500" data-i18n="inv_empty">目前尚無盤查資料。</p></div>
+                    </div>
+                </div>
+
+                <div id="view-supply" class="hidden space-y-6 view-section">
+                    <div class="glass-card rounded-xl p-4 md:p-8">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-base md:text-lg text-gray-800 flex items-center">
+                                <i class="fa-solid fa-network-wired text-teal-600 mr-2 md:mr-3"></i> <span data-i18n="sup_title">供應鏈 API 整合數據 (Mock)</span>
+                            </h3>
+                            <button onclick="fetchSupplyData()" id="fetch-supply-btn" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded shadow transition flex items-center">
+                                <i class="fa-solid fa-cloud-arrow-down mr-2"></i> <span data-i18n="sup_fetch">同步供應商數據</span>
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="sup_tbl_name">供應商名稱</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="sup_tbl_sec">所屬產業</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="sup_tbl_s12">S1+S2 (tCO2e)</th>
+                                        <th scope="col" class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" data-i18n="sup_tbl_status">API 狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="supply-table-body" class="bg-white divide-y divide-gray-200">
+                                    <tr><td colspan="4" class="px-6 py-10 text-center text-gray-400 text-sm" data-i18n="sup_empty">點擊右上角按鈕同步數據</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-target" class="hidden space-y-6 view-section">
+                    <div class="glass-card rounded-xl p-4 md:p-8">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h3 class="font-bold text-base md:text-lg text-gray-800 flex items-center">
+                                <i class="fa-solid fa-chart-line text-purple-600 mr-2 md:mr-3"></i> <span data-i18n="tgt_title">SBTi 科學基礎減碳路徑追蹤</span>
+                            </h3>
+                            <div class="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-bold border border-purple-200">
+                                Target: 1.5°C Scenario
+                            </div>
+                        </div>
+                        <div class="h-80 w-full"><canvas id="sbtiChart"></canvas></div>
+                        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <p class="text-xs text-gray-500 mb-1" data-i18n="tgt_base">基準年 (2020) 排放量</p>
+                                <p class="text-xl font-bold text-gray-800">50,000 <span class="text-sm font-normal">tCO2e</span></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <p class="text-xs text-gray-500 mb-1" data-i18n="tgt_goal">2030 目標減量 (42%)</p>
+                                <p class="text-xl font-bold text-green-600">29,000 <span class="text-sm font-normal">tCO2e</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-audit" class="hidden space-y-6 view-section">
+                    <div class="glass-card rounded-xl p-8 max-w-3xl mx-auto text-center border-t-8 border-indigo-600">
+                        <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
+                            <i class="fa-solid fa-file-signature"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2" data-i18n="adt_title">自動化溫室氣體盤查報告</h2>
+                        <p class="text-gray-500 mb-8 text-sm" data-i18n="adt_desc">系統將整合所有輸入數據、AWS 雲端運算結果與供應鏈 API 數據，自動生成符合第三方查證標準的完整報告書。</p>
+                        
+                        <div class="bg-gray-50 p-6 rounded-lg text-left border border-gray-200 mb-8 space-y-3">
+                            <div class="flex items-center text-sm"><i class="fa-solid fa-check text-green-500 w-6"></i> <span data-i18n="adt_chk1">資料庫完整性驗證通過</span></div>
+                            <div class="flex items-center text-sm"><i class="fa-solid fa-check text-green-500 w-6"></i> <span data-i18n="adt_chk2">異常離群值分析完成</span></div>
+                            <div class="flex items-center text-sm"><i class="fa-solid fa-check text-green-500 w-6"></i> <span data-i18n="adt_chk3">SBTi 目標達成率計算完成</span></div>
+                        </div>
+
+                        <button onclick="generateAuditReport()" id="gen-audit-btn" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-lg font-bold transition flex justify-center items-center mx-auto w-full md:w-auto">
+                            <i class="fa-solid fa-download mr-2"></i> <span id="gen-audit-txt" data-i18n="adt_btn">生成完整查證報告 (PDF)</span>
+                        </button>
                     </div>
                 </div>
 
@@ -231,15 +368,15 @@
                     <div class="bg-teal-700 text-white p-3 rounded-t-lg flex justify-between items-center">
                         <div class="flex items-center">
                             <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 overflow-hidden">
-                                <img src="./assets/tanjibaby.png" alt="碳吉" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tanji2026/ccus/main/tanjibaby.png'">
+                                <img src="./assets/tanjibaby.png" alt="Mascot" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tanji2026/ccus/main/tanjibaby.png'">
                             </div>
-                            <span class="font-bold text-sm">碳吉小幫手</span>
+                            <span class="font-bold text-sm" data-i18n="chat_title">碳吉小幫手</span>
                         </div>
                         <button onclick="toggleChat()" class="text-teal-100 hover:text-white"><i class="fa-solid fa-times"></i></button>
                     </div>
                     <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-3">
                         <div class="flex items-start">
-                            <div class="bg-white border border-gray-200 text-gray-700 text-xs p-2.5 rounded-lg rounded-tl-none max-w-[85%] shadow-sm">
+                            <div class="bg-white border border-gray-200 text-gray-700 text-xs p-2.5 rounded-lg rounded-tl-none max-w-[85%] shadow-sm" data-i18n="chat_init">
                                 歡迎體驗！這是一個專為綠色融資審查設計的模擬環境。有任何操作上的問題都可以問我喔！
                             </div>
                         </div>
@@ -253,42 +390,398 @@
                 </div>
                 
                 <div onclick="toggleChat()" class="w-14 h-14 md:w-16 md:h-16 cursor-pointer animate-float hover:scale-110 transition-transform relative group">
-                    <img src="./assets/tanjibaby.png" class="w-full h-full object-contain filter drop-shadow-lg rounded-full bg-white p-1" alt="呼叫小幫手" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tanji2026/ccus/main/tanjibaby.png'">
-                    <div class="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    <img src="./assets/tanjibaby.png" class="w-full h-full object-contain filter drop-shadow-lg rounded-full bg-white p-1" alt="Chat" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tanji2026/ccus/main/tanjibaby.png'">
+                    <div class="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" data-i18n="chat_hover">
                         需要幫忙嗎？
                     </div>
                     <div id="chat-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white font-bold hidden">1</div>
                 </div>
             </div>
-
         </main>
     </div>
 
     <script>
+        const dict = {
+            zh: {
+                toast_lock: "此為企業版進階模組，請聯繫系統管理員解鎖。",
+                login_title_left: "企業綠色融資",
+                login_title_mobile: "綠色融資暨碳管理平台",
+                login_welcome: "歡迎登入系統",
+                login_desc: "請輸入您的企業編號以繼續操作。",
+                login_label: "員工 / 企業編號",
+                login_placeholder: "請輸入編號 (測試可留白)",
+                login_hint: "提示：輸入 admin 可解鎖進階模組。",
+                login_btn: "登入系統",
+                copyright: "作品受著作權法保護，未經授權請勿複製轉載",
+                contact: "聯絡我們：tanji2026@gmail.com",
+                nav_title: "綠色融資暨碳管理平台",
+                tab_dash: "總覽儀表板",
+                tab_calc: "碳排試算引擎",
+                nav_grp_data: "數據管理",
+                tab_inv: "盤查清冊管理",
+                tab_supply: "供應鏈碳排數據",
+                nav_grp_comp: "融資與合規",
+                tab_target: "減碳目標追蹤",
+                tab_audit: "自動化稽核報告",
+                role_normal: "一般權限",
+                role_admin: "系統管理員 (全權限)",
+                btn_ai: "AI 智能診斷",
+                btn_pdf: "視覺化報告",
+                btn_csv: "匯出數據",
+                status_unknown: "狀態未定",
+                status_conn: "連線成功",
+                status_fail: "連線失敗",
+                dash_card1: "全行綠色融資餘額",
+                unit_billion: "億",
+                dash_card2: "歷史累計投融資碳排",
+                dash_card3: "PCAF 覆蓋率 (估算)",
+                chart_title: "企業碳排放歷史趨勢 (即時連線資料庫)",
+                calc_title: "ISO 14064-1 企業全方位碳排試算",
+                calc_industry: "行業別設定：",
+                calc_ind_mfg: "C 大類 - 製造業",
+                calc_lock: "模擬鎖定",
+                scope1: "範疇一 (直接排放)",
+                f_oil: "重油/燃料油 (公升)",
+                f_gas: "固定源天然氣 (立方公尺)",
+                f_diesel: "柴油使用量 (公升)",
+                f_gasoline: "汽油使用量 (公升)",
+                f_ref: "冷媒逸散 (公斤)",
+                scope2: "範疇二 (能源間接)",
+                f_power: "外購電力 (度/kWh)",
+                scope3: "範疇三 (其他間接)",
+                f_waste: "事業廢棄物 (公噸)",
+                f_water: "自來水 (度/m3)",
+                f_travel: "商務差旅 (公里)",
+                calc_res_label: "本次計算排放量",
+                calc_submit: "呼叫 AWS Lambda 運算",
+                inv_title: "歷史盤查清冊管理 (AWS DynamoDB)",
+                tbl_time: "時間戳記",
+                tbl_user: "經辦人員",
+                tbl_ind: "產業類別",
+                tbl_total: "總碳排 (tCO2e)",
+                tbl_scopes: "範疇 (S1/S2/S3)",
+                tbl_act: "操作",
+                inv_loading: "正在讀取資料庫...",
+                inv_empty: "目前尚無盤查資料。",
+                chat_title: "碳吉小幫手",
+                chat_init: "歡迎體驗！這是一個專為綠色融資審查設計的模擬環境。有任何操作上的問題都可以問我喔！",
+                chat_hover: "需要幫忙嗎？",
+                chat_ph: "輸入訊息...",
+                del_btn: "刪除",
+                ind_val: "製造業 (C)",
+                guest: "訪客測試",
+                chart_lbl: "碳排放紀錄 (tCO2e)",
+                alert_no_data: "目前沒有數據可供匯出！",
+                alert_del: "確定要刪除此筆盤查紀錄嗎？刪除後無法復原。",
+                alert_del_fail: "刪除失敗：\n",
+                btn_del_ing: "刪除中...",
+                btn_calc_ing: "雲端運算與存檔中...",
+                alert_calc_ok: "計算完成！資料已存入雲端。\n是否切換至儀表板查看趨勢圖？",
+                login_ing: "正在連接 AWS DynamoDB...",
+                err_login: "連線失敗",
+                ai_title: "AI 智慧減碳診斷",
+                sup_title: "供應鏈 API 整合數據 (Mock)",
+                sup_fetch: "同步供應商數據",
+                sup_tbl_name: "供應商名稱",
+                sup_tbl_sec: "所屬產業",
+                sup_tbl_s12: "S1+S2 (tCO2e)",
+                sup_tbl_status: "API 狀態",
+                sup_empty: "點擊右上角按鈕同步數據",
+                tgt_title: "SBTi 科學基礎減碳路徑追蹤",
+                tgt_base: "基準年 (2020) 排放量",
+                tgt_goal: "2030 目標減量 (42%)",
+                adt_title: "自動化溫室氣體盤查報告",
+                adt_desc: "系統將整合所有輸入數據、AWS 雲端運算結果與供應鏈 API 數據，自動生成符合第三方查證標準的完整報告書。",
+                adt_chk1: "資料庫完整性驗證通過",
+                adt_chk2: "異常離群值分析完成",
+                adt_chk3: "SBTi 目標達成率計算完成",
+                adt_btn: "生成完整查證報告 (PDF)"
+            },
+            en: {
+                toast_lock: "Premium module. Contact admin to unlock.",
+                login_title_left: "Green Finance",
+                login_title_mobile: "Green Finance & Carbon Platform",
+                login_welcome: "Welcome to the System",
+                login_desc: "Please enter your enterprise ID to continue.",
+                login_label: "Employee / Enterprise ID",
+                login_placeholder: "Enter ID (Optional)",
+                login_hint: "Hint: Enter admin to unlock advanced modules.",
+                login_btn: "Login",
+                copyright: "Copyright Protected. Do not copy.",
+                contact: "Contact: tanji2026@gmail.com",
+                nav_title: "Green Finance Platform",
+                tab_dash: "Dashboard",
+                tab_calc: "Carbon Calculator",
+                nav_grp_data: "Data Management",
+                tab_inv: "Inventory Management",
+                tab_supply: "Supply Chain Data",
+                nav_grp_comp: "Compliance",
+                tab_target: "Target Tracking",
+                tab_audit: "Audit Reports",
+                role_normal: "Standard Access",
+                role_admin: "System Admin (Full Access)",
+                btn_ai: "AI Advisor",
+                btn_pdf: "Export Report",
+                btn_csv: "Export CSV",
+                status_unknown: "Status Unknown",
+                status_conn: "Connected",
+                status_fail: "Connection Failed",
+                dash_card1: "Total Green Finance",
+                unit_billion: "Billion",
+                dash_card2: "Historical Emissions",
+                dash_card3: "PCAF Coverage (Est.)",
+                chart_title: "Historical Carbon Emissions Trend (Real-time DB)",
+                calc_title: "ISO 14064-1 Carbon Emission Calculator",
+                calc_industry: "Industry:",
+                calc_ind_mfg: "Class C - Manufacturing",
+                calc_lock: "Locked (Demo)",
+                scope1: "Scope 1 (Direct)",
+                f_oil: "Heavy Fuel Oil (L)",
+                f_gas: "Natural Gas (m3)",
+                f_diesel: "Diesel (L)",
+                f_gasoline: "Gasoline (L)",
+                f_ref: "Refrigerant Leakage (kg)",
+                scope2: "Scope 2 (Indirect Energy)",
+                f_power: "Purchased Electricity (kWh)",
+                scope3: "Scope 3 (Other Indirect)",
+                f_waste: "Industrial Waste (Ton)",
+                f_water: "Tap Water (m3)",
+                f_travel: "Business Travel (km)",
+                calc_res_label: "Calculated Emissions",
+                calc_submit: "Run AWS Lambda Calculation",
+                inv_title: "Historical Inventory Records (AWS DynamoDB)",
+                tbl_time: "Timestamp",
+                tbl_user: "Operator",
+                tbl_ind: "Industry",
+                tbl_total: "Total (tCO2e)",
+                tbl_scopes: "Scopes (S1/S2/S3)",
+                tbl_act: "Actions",
+                inv_loading: "Loading database...",
+                inv_empty: "No inventory records found.",
+                chat_title: "Tanji Assistant",
+                chat_init: "Welcome! This is a demo environment designed for green finance. Feel free to ask any questions!",
+                chat_hover: "Need help?",
+                chat_ph: "Type a message...",
+                del_btn: "Delete",
+                ind_val: "Manufacturing (C)",
+                guest: "Guest Test",
+                chart_lbl: "Carbon Record (tCO2e)",
+                alert_no_data: "No data available to export!",
+                alert_del: "Are you sure you want to delete this record? This cannot be undone.",
+                alert_del_fail: "Deletion failed:\n",
+                btn_del_ing: "Deleting...",
+                btn_calc_ing: "Computing & Saving...",
+                alert_calc_ok: "Calculation complete! Data saved to cloud.\nSwitch to Dashboard to view trends?",
+                login_ing: "Connecting to AWS DynamoDB...",
+                err_login: "Connection Failed",
+                ai_title: "AI Carbon Reduction Advisor",
+                sup_title: "Supply Chain API Integration (Mock)",
+                sup_fetch: "Sync Supplier Data",
+                sup_tbl_name: "Supplier Name",
+                sup_tbl_sec: "Sector",
+                sup_tbl_s12: "S1+S2 (tCO2e)",
+                sup_tbl_status: "API Status",
+                sup_empty: "Click top-right button to sync data",
+                tgt_title: "SBTi Carbon Reduction Pathway",
+                tgt_base: "Base Year (2020) Emissions",
+                tgt_goal: "2030 Reduction Target (42%)",
+                adt_title: "Automated GHG Inventory Report",
+                adt_desc: "The system will integrate all input data, AWS cloud computations, and supply chain API data to automatically generate a complete report complying with third-party verification standards.",
+                adt_chk1: "Database integrity verification passed",
+                adt_chk2: "Outlier anomaly analysis completed",
+                adt_chk3: "SBTi target achievement rate calculated",
+                adt_btn: "Generate Verification Report (PDF)"
+            }
+        };
+
+        let curLang = 'zh';
+
+        function toggleLang() {
+            curLang = curLang === 'zh' ? 'en' : 'zh';
+            const btns = document.querySelectorAll('.lang-btn .lang-text');
+            btns.forEach(btn => { btn.innerText = curLang === 'zh' ? 'EN' : '中文'; });
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(dict[curLang][key]) el.innerHTML = dict[curLang][key];
+            });
+            document.getElementById('user-id-input').placeholder = dict[curLang].login_placeholder;
+            document.getElementById('chat-input').placeholder = dict[curLang].chat_ph;
+            
+            if(isAdmin) {
+                document.getElementById('display-role').innerText = dict[curLang].role_admin;
+            } else {
+                document.getElementById('display-role').innerText = dict[curLang].role_normal;
+            }
+
+            if(currentUserId === "訪客測試" || currentUserId === "Guest Test") {
+                currentUserId = dict[curLang].guest;
+                document.getElementById('display-name').innerText = currentUserId;
+                document.getElementById('mobile-display-name').innerText = currentUserId;
+            }
+
+            if(myChart && currentRecords.length > 0) {
+                myChart.data.datasets[0].label = dict[curLang].chart_lbl;
+                myChart.update();
+            }
+            if(!document.getElementById('view-inventory').classList.contains('hidden')) renderInventoryTable();
+            if(!document.getElementById('view-target').classList.contains('hidden')) renderSBTiChart();
+        }
+
+        function t(key) { return dict[curLang][key]; }
+
         const lambdaUrl = "https://p5m47aire4jf7yfjox2natmszq0pzmdy.lambda-url.ap-northeast-1.on.aws"; 
         let myChart = null; 
+        let sbtiChart = null;
         let currentRecords = [];
-        let currentUserId = "測試經辦";
-        const mascotMessages = [
-            '嗨！我是碳吉 🌱<br><span class="text-xs text-gray-500 font-normal">您的 ESG 智慧小幫手</span>',
-            '目前是製造業模式喔！<br><span class="text-xs text-gray-500 font-normal">記得輸入鍋爐與冷媒數據</span>',
-            '今天也要努力減碳喔！<br><span class="text-xs text-gray-500 font-normal">每一個數據都很重要</span>',
-            '這是一個模擬環境 (PoC)<br><span class="text-xs text-gray-500 font-normal">放心測試，不會影響真實數據</span>'
-        ];
+        let currentUserId = dict[curLang].guest;
+        let isAdmin = false;
+
+        const mascotMessages = {
+            zh: [
+                '嗨！我是碳吉 🌱<br><span class="text-xs text-gray-500 font-normal">您的 ESG 智慧小幫手</span>',
+                '輸入 admin 試試看！<br><span class="text-xs text-gray-500 font-normal">可解鎖企業專屬進階功能</span>',
+                '今天也要努力減碳喔！<br><span class="text-xs text-gray-500 font-normal">每一個數據都很重要</span>',
+                '這是一個模擬環境 (PoC)<br><span class="text-xs text-gray-500 font-normal">放心測試，不會影響真實數據</span>'
+            ],
+            en: [
+                'Hi! I am Tanji 🌱<br><span class="text-xs text-gray-500 font-normal">Your ESG Assistant</span>',
+                'Try typing admin!<br><span class="text-xs text-gray-500 font-normal">To unlock advanced features</span>',
+                'Let\'s reduce carbon today!<br><span class="text-xs text-gray-500 font-normal">Every byte counts</span>',
+                'This is a demo (PoC)<br><span class="text-xs text-gray-500 font-normal">Test safely, no real impact</span>'
+            ]
+        };
         let currentMsgIndex = 0;
 
         function changeMascotText() {
-            currentMsgIndex = (currentMsgIndex + 1) % mascotMessages.length;
+            currentMsgIndex = (currentMsgIndex + 1) % mascotMessages[curLang].length;
             const bubble = document.getElementById('mascot-text');
             const bubbleContainer = document.getElementById('mascot-speech');
             bubbleContainer.style.opacity = '0';
             setTimeout(() => {
-                bubble.innerHTML = mascotMessages[currentMsgIndex];
+                bubble.innerHTML = mascotMessages[curLang][currentMsgIndex];
                 bubbleContainer.style.opacity = '1';
                 bubbleContainer.classList.remove('speech-bubble-enter');
                 void bubbleContainer.offsetWidth; 
                 bubbleContainer.classList.add('speech-bubble-enter');
             }, 200);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-container');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('hidden');
+            toast.classList.remove('toast-anim');
+            void toast.offsetWidth;
+            toast.classList.add('toast-anim');
+            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+        }
+
+        function trySwitchTab(tabId) {
+            const advancedTabs = ['supply', 'target', 'audit'];
+            const titles = {
+                'dashboard': 'tab_dash', 'carbon-calc': 'tab_calc', 'inventory': 'tab_inv',
+                'supply': 'tab_supply', 'target': 'tab_target', 'audit': 'tab_audit'
+            };
+
+            if (advancedTabs.includes(tabId)) {
+                if (!isAdmin) {
+                    showToast(t('toast_lock'));
+                    return;
+                }
+            }
+            switchTab(tabId);
+            document.getElementById('page-title').innerText = t(titles[tabId]);
+        }
+
+        function setActiveNav(navId) {
+            document.querySelectorAll('.sidebar-item').forEach(nav => {
+                nav.classList.remove('sidebar-active', 'border-green-400');
+                if(!nav.classList.contains('adv-module') || isAdmin) {
+                    nav.classList.add('border-transparent');
+                }
+            });
+            const targetNav = document.getElementById(navId);
+            if(targetNav) {
+                targetNav.classList.add('sidebar-active', 'border-green-400');
+                targetNav.classList.remove('border-transparent');
+            }
+        }
+
+        function switchTab(viewId) {
+            document.querySelectorAll('.view-section').forEach(view => {
+                view.classList.add('hidden');
+            });
+            const targetView = document.getElementById('view-' + viewId);
+            if(targetView) targetView.classList.remove('hidden');
+            
+            setActiveNav('nav-' + viewId);
+            
+            if(viewId === 'dashboard' && myChart) myChart.resize();
+            if(viewId === 'inventory') renderInventoryTable();
+            if(viewId === 'target') setTimeout(() => renderSBTiChart(), 100);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const idInput = document.getElementById('user-id-input').value.trim();
+            
+            if(idInput) {
+                currentUserId = idInput;
+            } else {
+                currentUserId = t('guest');
+            }
+            
+            document.getElementById('display-name').innerText = currentUserId;
+            document.getElementById('mobile-display-name').innerText = currentUserId;
+            const initial = currentUserId.charAt(0).toUpperCase();
+            document.getElementById('user-avatar').innerText = initial;
+            document.getElementById('mobile-avatar').innerText = initial;
+
+            isAdmin = (currentUserId.toLowerCase() === 'admin');
+            if (isAdmin) {
+                document.getElementById('display-role').innerText = t('role_admin');
+                document.querySelectorAll('.adv-module').forEach(el => {
+                    el.classList.remove('opacity-50');
+                    el.classList.add('hover:bg-slate-800', 'hover:text-white');
+                    const icon = el.querySelector('.nav-lock-icon');
+                    if(icon) {
+                        icon.classList.remove('fa-lock', 'text-gray-500');
+                        icon.classList.add('fa-unlock', 'text-teal-400');
+                    }
+                });
+            } else {
+                document.getElementById('display-role').innerText = t('role_normal');
+            }
+            
+            const btnText = document.getElementById('login-btn-text');
+            const spinner = document.getElementById('login-spinner');
+            const errorMsg = document.getElementById('connection-error-msg');
+            
+            btnText.innerText = t('login_ing');
+            spinner.classList.remove('hidden');
+            errorMsg.classList.add('hidden');
+            
+            try {
+                await loadHistoryData();
+                updateStatus('connected');
+            } catch (err) {
+                updateStatus('error');
+                errorMsg.classList.remove('hidden');
+                errorMsg.innerHTML = `<p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${t('err_login')}</p><p class="mt-1 text-[10px] font-mono bg-red-100 p-1 rounded mb-2">${err.message}</p>`;
+                await new Promise(r => setTimeout(r, 1500));
+            } finally {
+                const statusBadge = document.getElementById('aws-status-text');
+                if (statusBadge.innerText === t('status_conn')) {
+                    document.getElementById('login-modal').classList.add('hidden');
+                    document.getElementById('main-layout').classList.remove('hidden');
+                    setTimeout(() => document.getElementById('main-layout').classList.remove('opacity-0'), 50);
+                    if (!myChart) renderChart([], []);
+                } else {
+                    btnText.innerText = t('login_btn');
+                    spinner.classList.add('hidden');
+                }
+            }
         }
 
         function toggleChat() {
@@ -314,13 +807,26 @@
             input.value = '';
 
             setTimeout(() => {
-                const replies = [
+                let reply = "";
+                const replies_zh = [
                     "這是一個模擬環境，您可以點擊左側選單進行測試。",
                     "碳排計算是依照 ISO 14064-1 標準設計的喔！",
                     "您可以輸入任意數據來觀看儀表板的變化。",
-                    "需要匯出報告嗎？點擊右上角的 PDF 或 CSV 按鈕即可。"
+                    "如果有任何疑問，歡迎寄信至 tanji2026@gmail.com！"
                 ];
-                const reply = replies[Math.floor(Math.random() * replies.length)];
+                const replies_en = [
+                    "This is a demo environment. Please explore using the left menu.",
+                    "Calculations are based on the ISO 14064-1 standard!",
+                    "You can enter any data to see dashboard changes.",
+                    "Any questions? Feel free to email tanji2026@gmail.com!"
+                ];
+                
+                const arr = curLang === 'zh' ? replies_zh : replies_en;
+                if(msg.toLowerCase().includes("admin") || msg.includes("權限") || msg.includes("unlock")) {
+                    reply = curLang === 'zh' ? "如果在登入時輸入 admin，就可以解鎖進階模組喔！" : "Log in with 'admin' to unlock advanced features!";
+                } else {
+                    reply = arr[Math.floor(Math.random() * arr.length)];
+                }
                 addChatMessage(reply, 'bot');
             }, 800);
         }
@@ -346,80 +852,11 @@
             const badge = document.getElementById('aws-status-badge');
             if (status === 'connected') {
                 badge.className = "text-[10px] md:text-xs text-green-600 font-bold bg-green-50 px-2 md:px-3 py-1 rounded-full border border-green-200 flex items-center gap-1 flex-shrink-0 whitespace-nowrap";
-                badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> AWS 連線成功';
+                badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> <span id="aws-status-text">' + t('status_conn') + '</span>';
             } else if (status === 'error') {
                 badge.className = "text-[10px] md:text-xs text-red-600 font-bold bg-red-50 px-2 md:px-3 py-1 rounded-full border border-red-200 flex items-center gap-1 flex-shrink-0 whitespace-nowrap";
-                badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-red-500"></div> 連線失敗';
-            } else {
-                badge.className = "text-[10px] md:text-xs text-gray-500 font-bold bg-gray-100 px-2 md:px-3 py-1 rounded-full border border-gray-200 flex items-center gap-1 flex-shrink-0 whitespace-nowrap";
-                badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-gray-400"></div> AWS 狀態未定';
+                badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-red-500"></div> <span id="aws-status-text">' + t('status_fail') + '</span>';
             }
-        }
-
-        async function handleLogin(e) {
-            e.preventDefault();
-            const idInput = document.getElementById('user-id-input').value.trim();
-            if(idInput) {
-                currentUserId = idInput;
-                document.getElementById('display-name').innerText = currentUserId;
-                document.getElementById('mobile-display-name').innerText = currentUserId;
-                const initial = currentUserId.charAt(0).toUpperCase();
-                document.getElementById('user-avatar').innerText = initial;
-                document.getElementById('mobile-avatar').innerText = initial;
-            }
-            
-            const btnText = document.getElementById('login-btn-text');
-            const spinner = document.getElementById('login-spinner');
-            const errorMsg = document.getElementById('connection-error-msg');
-            
-            btnText.innerText = '正在連接 AWS DynamoDB...';
-            spinner.classList.remove('hidden');
-            errorMsg.classList.add('hidden');
-            
-            try {
-                await loadHistoryData();
-                updateStatus('connected');
-            } catch (err) {
-                console.error("Login failed:", err);
-                updateStatus('error');
-                errorMsg.classList.remove('hidden');
-                errorMsg.innerHTML = `<p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 連線失敗</p><p class="mt-1 text-[10px] font-mono bg-red-100 p-1 rounded mb-2">${err.message}</p>`;
-                await new Promise(r => setTimeout(r, 1500));
-            } finally {
-                const statusBadge = document.getElementById('aws-status-badge');
-                if (statusBadge.innerText.includes('連線成功')) {
-                    document.getElementById('login-modal').classList.add('hidden');
-                    document.getElementById('main-layout').classList.remove('hidden');
-                    setTimeout(() => document.getElementById('main-layout').classList.remove('opacity-0'), 50);
-                    if (!myChart) renderChart([], []);
-                } else {
-                    btnText.innerText = '進入系統';
-                    spinner.classList.add('hidden');
-                }
-            }
-        }
-
-        function switchTab(tabId) {
-            ['dashboard', 'carbon-calc', 'inventory'].forEach(id => {
-                const view = document.getElementById('view-' + id);
-                if(view) view.classList.add('hidden');
-                const nav = document.getElementById('nav-' + id);
-                if(nav) {
-                    nav.classList.remove('sidebar-active', 'border-green-400');
-                    nav.classList.add('border-transparent');
-                }
-            });
-            const targetView = document.getElementById('view-' + tabId);
-            if(targetView) targetView.classList.remove('hidden');
-            const targetNav = document.getElementById('nav-' + tabId);
-            if(targetNav) {
-                targetNav.classList.add('sidebar-active', 'border-green-400');
-                targetNav.classList.remove('border-transparent');
-            }
-            const titles = {'dashboard': '總覽儀表板', 'carbon-calc': '碳排試算引擎', 'inventory': '盤查清冊管理'};
-            document.getElementById('page-title').innerText = titles[tabId];
-            if(tabId === 'dashboard' && myChart) myChart.resize();
-            if(tabId === 'inventory') renderInventoryTable();
         }
 
         function toTaiwanTime(isoString) {
@@ -430,7 +867,7 @@
 
         async function loadHistoryData() {
             const response = await fetch(lambdaUrl, { method: 'GET' });
-            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            if (!response.ok) throw new Error(`${response.status}`);
             const res = await response.json();
             
             if(res.status === 'success') {
@@ -438,7 +875,7 @@
                 const records = res.data;
                 if (records.length === 0) {
                     renderChart([], []);
-                    document.getElementById('total-emissions-display').innerHTML = `0 <span class="text-sm font-normal text-gray-400">tCO2e (尚無紀錄)</span>`;
+                    document.getElementById('total-emissions-display').innerHTML = `0 <span class="text-sm font-normal text-gray-400">tCO2e</span>`;
                     return;
                 }
                 const chartRecords = [...records].reverse();
@@ -448,7 +885,7 @@
                 });
                 const dataPoints = chartRecords.map(item => item.total_tCO2e);
                 const totalSum = dataPoints.reduce((a, b) => parseFloat(a) + parseFloat(b), 0).toFixed(2);
-                document.getElementById('total-emissions-display').innerHTML = `${totalSum} <span class="text-sm font-normal text-gray-400">tCO2e (累計)</span>`;
+                document.getElementById('total-emissions-display').innerHTML = `${totalSum} <span class="text-sm font-normal text-gray-400">tCO2e</span>`;
                 renderChart(labels, dataPoints);
             }
         }
@@ -463,17 +900,17 @@
                 document.getElementById('inventory-empty').classList.add('hidden');
             }
             currentRecords.forEach(r => {
-                const displayUser = r.user_id || "系統管理員"; 
+                const displayUser = r.user_id || t('guest'); 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors";
                 tr.innerHTML = `
                     <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">${toTaiwanTime(r.timestamp)}</td>
                     <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-700"><span class="bg-gray-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-user text-gray-400 mr-1"></i>${displayUser}</span></td>
-                    <td class="px-4 md:px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">製造業 (C)</span></td>
+                    <td class="px-4 md:px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${t('ind_val')}</span></td>
                     <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${r.total_tCO2e}</td>
                     <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">${r.breakdown?.scope1} / ${r.breakdown?.scope2} / ${r.breakdown?.scope3}</td>
                     <td class="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="deleteRecord('${r.record_id}', '${r.timestamp}')" class="text-red-600 hover:text-red-900 hover:underline"><i class="fa-solid fa-trash-can mr-1"></i> 刪除</button>
+                        <button onclick="deleteRecord('${r.record_id}', '${r.timestamp}')" class="text-red-600 hover:text-red-900 hover:underline"><i class="fa-solid fa-trash-can mr-1"></i> ${t('del_btn')}</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -481,13 +918,13 @@
         }
         
         async function deleteRecord(recordId, timestamp) {
-            if(!confirm("確定要刪除此筆盤查紀錄嗎？刪除後無法復原。")) return;
+            if(!confirm(t('alert_del'))) return;
             const btn = (window.event && window.event.target) ? window.event.target.closest('button') : null;
             let originalContent = '';
             if (btn) {
                 originalContent = btn.innerHTML;
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 刪除中...';
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('btn_del_ing')}`;
             }
             try {
                 const response = await fetch(lambdaUrl, {
@@ -495,20 +932,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ record_id: recordId, timestamp: timestamp })
                 });
-                if(!response.ok) throw new Error(`伺服器回應錯誤 (${response.status})`);
+                if(!response.ok) throw new Error(`${response.status}`);
                 await loadHistoryData();
                 if(!document.getElementById('view-inventory').classList.contains('hidden')) renderInventoryTable();
             } catch(e) {
-                alert("刪除失敗：\n" + e.message);
+                alert(t('alert_del_fail') + e.message);
                 if(btn) { btn.innerHTML = originalContent; btn.disabled = false; }
             }
         }
 
         function exportCSV() {
-            if (!currentRecords || currentRecords.length === 0) { alert("目前沒有數據可供匯出！"); return; }
-            const headers = ["紀錄ID", "時間戳記", "經辦人員", "產業類別", "總碳排(tCO2e)", "範疇一(t)", "範疇二(t)", "範疇三(t)"];
+            if (!currentRecords || currentRecords.length === 0) { alert(t('alert_no_data')); return; }
+            const headers = [t('tbl_time'), t('tbl_user'), t('tbl_ind'), t('tbl_total'), "S1", "S2", "S3"];
             const rows = currentRecords.map(r => [
-                r.record_id, toTaiwanTime(r.timestamp), r.user_id || "系統管理員", "製造業 (C)", r.total_tCO2e, r.breakdown?.scope1 || 0, r.breakdown?.scope2 || 0, r.breakdown?.scope3 || 0
+                toTaiwanTime(r.timestamp), r.user_id || t('guest'), t('ind_val'), r.total_tCO2e, r.breakdown?.scope1 || 0, r.breakdown?.scope2 || 0, r.breakdown?.scope3 || 0
             ]);
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(",") + "\n";
             rows.forEach(row => { csvContent += row.join(",") + "\n"; });
@@ -523,7 +960,7 @@
         function exportPDF() {
             const btn = document.getElementById('pdf-btn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 產生中...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
             btn.disabled = true;
             
             const element = document.getElementById('report-content');
@@ -560,9 +997,9 @@
             };
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 雲端運算與存檔中...';
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> <span id="calc-btn-text">${t('btn_calc_ing')}</span>`;
             debug.classList.remove('hidden');
-            debug.innerText = `> 傳送至 AWS Lambda...\n> Payload: ${JSON.stringify(payload)}`;
+            debug.innerText = `> Lambda...\n> Payload: ${JSON.stringify(payload)}`;
 
             try {
                 const response = await fetch(lambdaUrl, {
@@ -570,7 +1007,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error(`HTTP 錯誤: ${response.status}`);
+                if (!response.ok) throw new Error(`${response.status}`);
                 const res = await response.json();
                 const data = res.data;
                 const breakdown = data.breakdown || {};
@@ -580,17 +1017,17 @@
                 document.getElementById('res-s2').innerText = breakdown.scope2;
                 document.getElementById('res-s3').innerText = breakdown.scope3;
                 
-                debug.innerText = `> 成功！\n> 紀錄 ID: ${data.record_id}`;
+                debug.innerText = `> OK!\n> ID: ${data.record_id}`;
                 await loadHistoryData();
                 updateStatus('connected');
                 
-                setTimeout(() => { if(confirm("計算完成！資料已存入雲端。\n是否切換至儀表板查看趨勢圖？")) switchTab('dashboard'); }, 500);
+                setTimeout(() => { if(confirm(t('alert_calc_ok'))) trySwitchTab('dashboard'); }, 500);
             } catch (err) {
-                debug.innerText = `> 失敗：${err.message}`;
+                debug.innerText = `> Fail: ${err.message}`;
                 updateStatus('error');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '呼叫 AWS Lambda 運算';
+                btn.innerHTML = `<span id="calc-btn-text">${t('calc_submit')}</span>`;
             }
         }
 
@@ -602,7 +1039,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '碳排放紀錄 (tCO2e)', data: data, borderColor: '#00df9a', backgroundColor: 'rgba(0, 223, 154, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointBackgroundColor: '#004d40', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: '#004d40', pointRadius: 4, pointHoverRadius: 6
+                        label: t('chart_lbl'), data: data, borderColor: '#00df9a', backgroundColor: 'rgba(0, 223, 154, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointBackgroundColor: '#004d40', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: '#004d40', pointRadius: 4, pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -618,6 +1055,122 @@
                     interaction: { mode: 'nearest', axis: 'x', intersect: false }
                 }
             });
+        }
+
+        function renderSBTiChart() {
+            const ctx = document.getElementById('sbtiChart').getContext('2d');
+            if (sbtiChart) sbtiChart.destroy();
+            const labels = ['2020 (Base)', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030 (Target)'];
+            const pathway = [50000, 47900, 45800, 43700, 41600, 39500, 37400, 35300, 33200, 31100, 29000];
+            const actual = [50000, 48500, 46200, 45000, 42100, null, null, null, null, null, null];
+            sbtiChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: curLang === 'zh' ? 'SBTi 目標路徑 (1.5°C)' : 'SBTi Pathway (1.5°C)', data: pathway, borderColor: '#d8b4fe', borderDash: [5, 5], borderWidth: 2, fill: false, pointRadius: 0 },
+                        { label: curLang === 'zh' ? '實際/推估排放量' : 'Actual/Proj. Emissions', data: actual, borderColor: '#7c3aed', backgroundColor: 'rgba(124, 58, 237, 0.1)', borderWidth: 3, fill: true, tension: 0.3, pointBackgroundColor: '#4c1d95', pointRadius: 5 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        async function fetchSupplyData() {
+            const btn = document.getElementById('fetch-supply-btn');
+            const tbody = document.getElementById('supply-table-body');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${curLang === 'zh' ? 'AWS 同步中...' : 'AWS Syncing...'}`;
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(lambdaUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'fetch_supply', user_id: currentUserId })
+                });
+                if (!response.ok) throw new Error(`${response.status}`);
+                const res = await response.json();
+                
+                const mockData = res.data || [];
+                tbody.innerHTML = '';
+                mockData.forEach(d => {
+                    const st = d.status === 'ok' ? `<span class="text-green-600"><i class="fa-solid fa-check-circle"></i> Connected</span>` : `<span class="text-red-600"><i class="fa-solid fa-xmark-circle"></i> API Error</span>`;
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 md:px-6 py-4 font-bold text-sm text-gray-800">${d.name}</td>
+                            <td class="px-4 md:px-6 py-4 text-sm text-gray-600">${d.sec}</td>
+                            <td class="px-4 md:px-6 py-4 text-sm font-mono">${d.s12}</td>
+                            <td class="px-4 md:px-6 py-4 text-xs font-bold">${st}</td>
+                        </tr>
+                    `;
+                });
+                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down mr-2"></i> ${curLang === 'zh' ? '同步完成' : 'Sync Complete'}`;
+                updateStatus('connected');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center text-red-500 text-sm">AWS 連線失敗: ${err.message}</td></tr>`;
+                updateStatus('error');
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down mr-2"></i> ${t('sup_fetch')}`;
+                }, 2000);
+            }
+        }
+
+        async function generateAuditReport() {
+            const btn = document.getElementById('gen-audit-btn');
+            const txt = document.getElementById('gen-audit-txt');
+            txt.innerText = curLang === 'zh' ? 'AWS 雲端處理中...' : 'AWS Processing...';
+            btn.disabled = true;
+            
+            try {
+                await fetch(lambdaUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'generate_audit', user_id: currentUserId })
+                });
+                
+                alert(curLang === 'zh' ? 'AWS 驗證成功！開始生成 PDF 查證報告。' : 'AWS Authorized! Generating PDF report.');
+                exportPDF(); 
+            } catch (err) {
+                alert("AWS 連線失敗: " + err.message);
+                updateStatus('error');
+            } finally {
+                txt.innerText = t('adt_btn');
+                btn.disabled = false;
+            }
+        }
+
+        async function openAIModal() {
+            document.getElementById('ai-modal').classList.remove('hidden');
+            const content = document.getElementById('ai-content');
+            content.innerHTML = `<div class="flex items-center justify-center h-full text-teal-600"><i class="fa-solid fa-spinner fa-spin text-2xl mr-2"></i> 正在呼叫 AWS AI 運算...</div>`;
+            
+            try {
+                const response = await fetch(lambdaUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'ai_diagnosis', lang: curLang, user_id: currentUserId })
+                });
+                if (!response.ok) throw new Error(`${response.status}`);
+                const res = await response.json();
+                const msg = res.data.message;
+                
+                content.innerHTML = "";
+                let i = 0;
+                const typeWriter = setInterval(() => {
+                    content.innerHTML += msg.charAt(i);
+                    i++;
+                    if(i >= msg.length) clearInterval(typeWriter);
+                }, 30);
+            } catch (err) {
+                content.innerHTML = `<span class="text-red-500 font-bold">AWS 連線失敗：${err.message}</span>`;
+                updateStatus('error');
+            }
+        }
+
+        function closeAIModal() {
+            document.getElementById('ai-modal').classList.add('hidden');
         }
     </script>
 </body>
