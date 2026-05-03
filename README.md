@@ -115,4 +115,4 @@ graph TD
 3.  **前端**：將 `index.html` 內的 `lambdaUrl` 指向您的 Function URL，上傳至 GitHub 並開啟 GitHub Pages。
 
 ---
-*本文件由 [您的團隊名稱/個人] 編寫，作品受著作權法保護，未經授權請勿複製轉載。*
+*本文件由 碳吉 TanJi 編寫，作品受著作權法保護，未經授權請勿複製轉載。*
